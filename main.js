@@ -1,14 +1,97 @@
 const { downloadMediaMessage } = require('@whiskeysockets/baileys')
-const { smsg }      = require('./lib/simple')
-const { findPlugin } = require('./handler')
-const { parseText }  = require('./lib/myfunc')
-const { dbGet }      = require('./lib/functions')
+const { smsg }       = require('./lib/simple')
+const { findPlugin }  = require('./handler')
+const { parseText, isAdmin, checkBotAdmin, containsURL } = require('./lib/myfunc')
+const { dbGet, dbSet } = require('./lib/functions')
 const { generateCard } = require('./lib/cardGenerator')
-const { prefix }     = require('./config')
-const logger         = require('./lib/print')
-const fs             = require('fs')
+const { prefix }      = require('./config')
+const logger          = require('./lib/print')
+const fs              = require('fs')
 
 const BOT_START_TIME = Date.now()
+
+// ─── In-memory spam tracker ───────────────────────────────────
+const spamTracker = new Map()
+
+// ─── Antilink middleware ──────────────────────────────────────
+async function handleAntilink(conn, m) {
+  const enabled = dbGet(`groups.${m.chat}.antilink.enabled`, false)
+  if (!enabled || m.fromMe) return
+
+  if (!containsURL(m.text)) return
+
+  let groupMeta
+  try { groupMeta = await conn.groupMetadata(m.chat) } catch { return }
+  if (isAdmin(groupMeta, m.sender)) return  // admin bypass
+
+  // Hapus pesan
+  try { await conn.sendMessage(m.chat, { delete: m.key }) } catch { /* ignore */ }
+
+  const action   = dbGet(`groups.${m.chat}.antilink.action`, 'delete')
+  const maxWarns = dbGet(`groups.${m.chat}.antilink.maxWarns`, 3)
+
+  if (action === 'warn' || action === 'kick') {
+    const safeKey = m.sender.replace(/\./g, '_')
+    const warns   = dbGet(`groups.${m.chat}.antilink.warns.${safeKey}`, 0) + 1
+    dbSet(`groups.${m.chat}.antilink.warns.${safeKey}`, warns)
+
+    const botIsAdmin = await checkBotAdmin(conn, m.chat)
+
+    if (action === 'kick' || warns >= maxWarns) {
+      if (botIsAdmin) {
+        dbSet(`groups.${m.chat}.antilink.warns.${safeKey}`, 0)
+        await conn.groupParticipantsUpdate(m.chat, [m.sender], 'remove')
+        await conn.sendMessage(m.chat, {
+          text: `🚫 @${m.sender.split('@')[0]} di-kick karena mengirim link!`,
+          mentions: [m.sender],
+        })
+      }
+    } else {
+      await conn.sendMessage(m.chat, {
+        text: `⚠️ @${m.sender.split('@')[0]} dilarang kirim link! Peringatan: *${warns}/${maxWarns}*`,
+        mentions: [m.sender],
+      })
+    }
+  }
+}
+
+// ─── Antispam middleware ──────────────────────────────────────
+async function handleAntispam(conn, m) {
+  const enabled = dbGet(`groups.${m.chat}.antispam.enabled`, false)
+  if (!enabled || m.fromMe) return
+
+  let groupMeta
+  try { groupMeta = await conn.groupMetadata(m.chat) } catch { return }
+  if (isAdmin(groupMeta, m.sender)) return  // admin bypass
+
+  const key      = `${m.chat}:${m.sender}`
+  const now      = Date.now()
+  const limit    = dbGet(`groups.${m.chat}.antispam.limit`, 5)
+  const interval = 5000
+
+  const times = (spamTracker.get(key) || []).filter(t => now - t < interval)
+  times.push(now)
+  spamTracker.set(key, times)
+
+  if (times.length >= limit) {
+    spamTracker.delete(key)
+    const action     = dbGet(`groups.${m.chat}.antispam.action`, 'warn')
+    const botIsAdmin = await checkBotAdmin(conn, m.chat)
+
+    if (action === 'kick' && botIsAdmin) {
+      await conn.groupParticipantsUpdate(m.chat, [m.sender], 'remove')
+      await conn.sendMessage(m.chat, {
+        text: `🚫 @${m.sender.split('@')[0]} di-kick karena spam!`,
+        mentions: [m.sender],
+      })
+    } else {
+      await conn.sendMessage(m.chat, {
+        text: `⚠️ @${m.sender.split('@')[0]} jangan spam!`,
+        mentions: [m.sender],
+      })
+    }
+  }
+}
 
 // ─── Default teks welcome & goodbye ──────────────────────────
 const DEFAULT_WELCOME = '👋 Halo @tag!\nSelamat datang di *@grub*! Senang kamu bergabung 🎉'
@@ -33,7 +116,23 @@ async function messageHandler(conn, { messages, type }) {
 
       // Wrap pesan dengan helper methods
       const m = smsg(conn, rawMsg)
+      if (!m) continue
+
+      // ── Middleware: antilink & antispam (semua pesan di grup) ─
+      if (m.isGroup && m.text) {
+        await handleAntilink(conn, m).catch(() => {})
+      }
+      if (m.isGroup) {
+        await handleAntispam(conn, m).catch(() => {})
+      }
+
       if (!m?.text) continue
+
+      // ── Mute check: abaikan command jika bot di-mute ─────────
+      if (m.isGroup) {
+        const isMuted = dbGet(`groups.${m.chat}.settings.muted`, false)
+        if (isMuted) continue
+      }
 
       // Cek prefix
       if (!m.text.startsWith(prefix)) continue
