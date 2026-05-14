@@ -128,6 +128,21 @@ async function messageHandler(conn, { messages, type }) {
 
       if (!m?.text) continue
 
+      // ── Game Logic: Tebak Kata ────────────────────────────────
+      conn.tebakkata = conn.tebakkata || {}
+      if (m.isGroup && m.chat in conn.tebakkata) {
+        let game = conn.tebakkata[m.chat]
+        // Pastikan pesannya me-reply soal, atau membalas secara langsung
+        if (m.text.toLowerCase() === game.jawaban) {
+          clearTimeout(game.timeout)
+          await conn.sendMessage(m.chat, {
+            text: `🎉 *BENAR!* 🎉\n\nSelamat @${m.sender.split('@')[0]}, jawaban kamu benar!\nJawaban: *${game.jawaban.toUpperCase()}*\nHadiah: +${game.poin} XP`,
+            mentions: [m.sender]
+          }, { quoted: m })
+          delete conn.tebakkata[m.chat]
+        }
+      }
+
       // Cek prefix terlebih dahulu
       const prefixList = Array.isArray(prefix) ? prefix : [prefix]
       const usedPrefix = prefixList.find(p => m.text.startsWith(p))
