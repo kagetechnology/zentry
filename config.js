@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 module.exports = {
   // ─── Bot Identity ───────────────────────────────────────────
   botName: 'Zentry',
@@ -13,7 +15,7 @@ module.exports = {
 
   // ─── API Keys ───────────────────────────────────────────────
   // Dapatkan API Key gratis dari https://openrouter.ai/
-  openrouter: 'KODE_API_KEY_KAMU_DISINI',
+  openrouter: process.env.OPENROUTER_API_KEY || 'KODE_API_KEY_KAMU_DISINI',
 
 
   // ─── Settings ───────────────────────────────────────────────

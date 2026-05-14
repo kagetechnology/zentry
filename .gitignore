@@ -3,3 +3,4 @@ sessions/
 data/
 *.log
 .env
+.env
