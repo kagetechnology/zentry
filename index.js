@@ -65,8 +65,12 @@ async function main() {
     logger.info('Sesi ditemukan, langsung connect...')
   }
 
+  // Load semua plugin & aktifkan hot reload watcher
+  const { startBot, loadAllPlugins, watchPlugins } = require('./main')
+  loadAllPlugins()
+  watchPlugins()
+
   // Serahkan ke main.js untuk proses koneksi
-  const { startBot } = require('./main')
   await startBot({ authMethod, phoneNumber })
 }
 

@@ -15,8 +15,7 @@
  *  • goodbye    → dbGet(`groups.${jid}.goodbye.enabled`)
  */
 
-const fs   = require('fs')
-const path = require('path')
+const fs = require('fs')
 
 const { downloadMediaMessage } = require('@whiskeysockets/baileys')
 const { smsg }                 = require('./lib/simple')
@@ -25,8 +24,6 @@ const { dbGet, dbSet }         = require('./lib/functions')
 const { generateCard }         = require('./lib/cardGenerator')
 const { prefix }               = require('./config')
 const logger                   = require('./lib/print')
-
-const PLUGINS_DIR = path.join(__dirname, 'plugins')
 
 // ─── Plugin registry ─────────────────────────────────────────
 const plugins = new Map()
@@ -38,48 +35,11 @@ const spamTracker = new Map()
 const BOT_START_TIME = Date.now()
 
 // ═══════════════════════════════════════════════════════════════
-//  SECTION 1 — Plugin loader
+//  SECTION 1 — Plugin registry (loading dikelola oleh main.js)
 // ═══════════════════════════════════════════════════════════════
-
-/**
- * Muat semua plugin dari folder plugins/.
- * Hanya dipanggil sekali saat startup (dari main.js).
- */
-function loadPlugins() {
-  const files = fs.readdirSync(PLUGINS_DIR).filter(f => f.endsWith('.js'))
-
-  for (const file of files) {
-    try {
-      const pluginPath = path.join(PLUGINS_DIR, file)
-
-      // Hapus cache agar hot-reload bisa bekerja
-      delete require.cache[require.resolve(pluginPath)]
-
-      const plugin = require(pluginPath)
-
-      if (typeof plugin !== 'function') {
-        logger.warn(`Plugin ${file} tidak mengekspor fungsi, dilewati.`)
-        continue
-      }
-      if (!plugin.command) {
-        logger.warn(`Plugin ${file} tidak punya .command, dilewati.`)
-        continue
-      }
-
-      plugins.set(file, plugin)
-
-      const cmdName = plugin.help?.[0] || file.replace('.js', '')
-      const tag     = plugin.tags?.[0] || 'general'
-      logger.info(`Plugin dimuat: .${cmdName} [${tag}]`)
-
-    } catch (err) {
-      logger.error(`Gagal load plugin ${file}: ${err.message}`)
-    }
-  }
-
-  logger.info(`Total plugin: ${plugins.size}`)
-  return plugins
-}
+//
+//  plugins Map diisi oleh main.js melalui loadPlugin() + watchPlugins().
+//  handler.js hanya membaca registry ini saat pesan masuk.
 
 /**
  * Cari plugin yang cocok dengan command string.
@@ -399,4 +359,4 @@ async function handleGroupUpdate(conn, update) {
   }
 }
 
-module.exports = { loadPlugins, findPlugin, plugins, handleMessage, handleGroupUpdate }
+module.exports = { findPlugin, plugins, handleMessage, handleGroupUpdate }
