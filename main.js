@@ -128,13 +128,7 @@ async function messageHandler(conn, { messages, type }) {
 
       if (!m?.text) continue
 
-      // ── Mute check: abaikan command jika bot di-mute ─────────
-      if (m.isGroup) {
-        const isMuted = dbGet(`groups.${m.chat}.settings.muted`, false)
-        if (isMuted) continue
-      }
-
-      // Cek prefix
+      // Cek prefix terlebih dahulu
       if (!m.text.startsWith(prefix)) continue
 
       // Parse command — pisah hanya word pertama, rawText sisanya (newline terjaga)
@@ -144,6 +138,13 @@ async function messageHandler(conn, { messages, type }) {
       const rawText  = spaceIdx === -1 ? '' : body.slice(spaceIdx + 1)  // teks asli, newline utuh
       const args     = rawText.split(/\s+/).filter(Boolean)             // kata-kata untuk subcommand
       const text     = args.join(' ')
+
+      // ── Mute check: abaikan command jika bot di-mute (kecuali command unmute) ─────────
+      if (m.isGroup) {
+        const isMuted = dbGet(`groups.${m.chat}.settings.muted`, false)
+        // Jika sedang di-mute dan command BUKAN unmute, maka skip
+        if (isMuted && command !== 'unmute') continue
+      }
 
       // Cari plugin yang cocok
       const plugin = findPlugin(command)
