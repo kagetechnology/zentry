@@ -129,10 +129,12 @@ async function messageHandler(conn, { messages, type }) {
       if (!m?.text) continue
 
       // Cek prefix terlebih dahulu
-      if (!m.text.startsWith(prefix)) continue
+      const prefixList = Array.isArray(prefix) ? prefix : [prefix]
+      const usedPrefix = prefixList.find(p => m.text.startsWith(p))
+      if (!usedPrefix) continue
 
       // Parse command — pisah hanya word pertama, rawText sisanya (newline terjaga)
-      const body    = m.text.slice(prefix.length)
+      const body    = m.text.slice(usedPrefix.length)
       const spaceIdx = body.search(/\s/)
       const command  = (spaceIdx === -1 ? body : body.slice(0, spaceIdx)).toLowerCase().trim()
       const rawText  = spaceIdx === -1 ? '' : body.slice(spaceIdx + 1)  // teks asli, newline utuh
@@ -157,7 +159,7 @@ async function messageHandler(conn, { messages, type }) {
         text,
         rawText,   // ← teks lengkap setelah command, newline terjaga
         command,
-        prefix,
+        prefix: usedPrefix,
         isGroup: m.isGroup,
         sender: m.sender,
         downloadMediaMessage,
