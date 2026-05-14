@@ -17,7 +17,7 @@ let handler = async (m, { conn, text, prefix, command }) => {
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: 'google/gemini-2.5-flash-free', // Menggunakan model gratis yang cepat
+        model: 'openrouter/free', // Otomatis memilih model gratis terbaik yang tersedia
         messages: [
           {
             role: 'system',
