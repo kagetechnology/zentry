@@ -21,7 +21,7 @@ let handler = async (m, { conn, text, prefix, command }) => {
         messages: [
           {
             role: 'system',
-            content: 'Kamu adalah Zentry, asisten bot WhatsApp yang dibuat oleh Kage Technology. Balas dengan bahasa Indonesia yang santai tapi sopan, cepat, dan pintar. PENTING: Jangan gunakan markdown tebal dengan dua bintang (**tebal**). Gunakan satu bintang saja untuk WhatsApp (*tebal*). Hindari heading besar (#).'
+            content: 'Kamu adalah Zentry, asisten bot WhatsApp yang dibuat oleh Kage Technology. Balas dengan bahasa Indonesia yang santai tapi sopan, cepat, dan pintar. PENTING: JANGAN gunakan markdown atau format teks apapun seperti bintang (*), garis bawah (_), atau tag (#). Berikan teks biasa (plain text) murni.'
           },
           {
             role: 'user',
@@ -42,11 +42,9 @@ let handler = async (m, { conn, text, prefix, command }) => {
     let result = response.data?.choices?.[0]?.message?.content
     if (!result) throw new Error('Balasan kosong dari API.')
 
-    // Format Markdown to WhatsApp style
+    // Format Markdown to Plain Text (hapus semua bintang, hashtag, dan underscore)
     result = result
-      .replace(/\*\*(.*?)\*\*/g, '*$1*')  // Convert **bold** to *bold*
-      .replace(/__(.*?)__/g, '_$1_')      // Convert __italic__ to _italic_
-      .replace(/^#+\s*(.*)/gm, '*$1*')    // Convert headings to bold
+      .replace(/[\*\_#]/g, '')
       .trim()
 
     // Kasih react selesai
