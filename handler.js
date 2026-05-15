@@ -25,46 +25,22 @@ const { generateCard }         = require('./lib/cardGenerator')
 const { prefix }               = require('./config')
 const logger                   = require('./lib/print')
 
-// ─── LID ↔ Phone mapping (persisted to DB) ──────────────────
+// ─── LID ↔ Phone mapping (BETABOTZ-style) ───────────────────
 /**
- * Cek apakah sender (LID atau nomor) cocok dengan salah satu ownerNumber.
- * Mapping LID → nomor disimpan di DB agar permanen.
+ * Cek apakah sender cocok dengan ownerNumber.
+ * Jika sender dalam format LID (@lid), gunakan conn.getJid() untuk resolve ke nomor HP.
+ * Konsep ini diambil dari BETABOTZ-MD2-pro handler.js.
  */
 function isOwnerSender(sender, ownerNumbers, conn) {
-  const numPart = sender.split('@')[0]
+  // Normalize sender: jika LID → resolve ke @s.whatsapp.net lewat conn.getJid
+  const normalizedSender = sender.endsWith('@lid')
+    ? (conn.getJid?.(sender)?.replace(/[^0-9]/g, '') || sender.split('@')[0]) + '@s.whatsapp.net'
+    : sender.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
 
-  // 1. Sender sudah berupa nomor HP biasa → cek langsung
-  if (/^\d{10,15}$/.test(numPart)) {
-    return ownerNumbers.some(num => num.replace(/\D/g, '') === numPart)
-  }
+  // Normalize owner list ke format @s.whatsapp.net
+  const ownerJids = ownerNumbers.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net')
 
-  // 2. Sender adalah LID → cek di DB mapping dulu
-  const mappedPhone = dbGet(`lid_map.${numPart}`)
-  if (mappedPhone) {
-    return ownerNumbers.some(num => num.replace(/\D/g, '') === mappedPhone)
-  }
-
-  // 3. Coba resolve via conn.contacts (jika tersedia)
-  try {
-    const contacts = conn.contacts || {}
-    // Cek langsung via key LID
-    if (contacts[sender]?.id) {
-      const phone = contacts[sender].id.split('@')[0]
-      dbSet(`lid_map.${numPart}`, phone) // Simpan ke DB
-      return ownerNumbers.some(num => num.replace(/\D/g, '') === phone)
-    }
-    // Iterasi semua kontak, cari yang LID-nya cocok
-    for (const [, c] of Object.entries(contacts)) {
-      const cLid = c.lid?.split('@')[0]
-      if ((cLid === numPart || c.lid === sender) && c.id) {
-        const phone = c.id.split('@')[0]
-        dbSet(`lid_map.${numPart}`, phone) // Simpan ke DB
-        return ownerNumbers.some(num => num.replace(/\D/g, '') === phone)
-      }
-    }
-  } catch {}
-
-  return false
+  return ownerJids.includes(normalizedSender)
 }
 
 
@@ -213,28 +189,6 @@ async function handleMessage(conn, { messages, type }) {
       const m = smsg(conn, rawMsg)
       if (!m || !m.sender) continue
 
-      // ── [LID AUTO-MAPPING] — simpan pemetaan LID ↔ nomor HP ──
-      // Baileys menyimpan ID asli di rawMsg.key.participant (grup) atau rawMsg.key.remoteJid (DM)
-      // Terkadang formatnya berupa LID (@lid), tapi context info bisa punya ID nomor asli
-      try {
-        const senderLid = m.sender
-        const lidPart = senderLid.split('@')[0]
-        if (senderLid.endsWith('@lid') && !dbGet(`lid_map.${lidPart}`)) {
-          // Coba ambil nomor asli dari contextInfo jika ada
-          const verifiedName = rawMsg.pushName
-          // Coba iterasi contacts
-          const contacts = conn.contacts || {}
-          for (const [cKey, cVal] of Object.entries(contacts)) {
-            const cLid = (cVal.lid || '').split('@')[0]
-            if (cLid === lidPart && cKey.includes('@s.whatsapp.net')) {
-              const phone = cKey.split('@')[0]
-              dbSet(`lid_map.${lidPart}`, phone)
-              logger.info(`[LID-MAP] ${lidPart} → ${phone}`)
-              break
-            }
-          }
-        }
-      } catch {}
 
       // ── [FITUR: AFK] ──────────────────────────────────────────────────
       if (m.sender) {
