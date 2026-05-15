@@ -1,5 +1,5 @@
-const { plugins } = require('../handler')
-const { botName, botVersion, prefix } = require('../config')
+const { plugins } = require('../../handler')
+const { botName, botVersion, prefix } = require('../../config')
 const fs = require('fs')
 const path = require('path')
 
@@ -11,6 +11,7 @@ const arrayMenu = [
   'search',
   'ai',
   'game',
+  'rpg',
   'utility',
   'media',
   'admin',
@@ -25,6 +26,7 @@ const allTags = {
   'search': '🔍 Search',
   'ai': '🤖 AI & ChatGPT',
   'game': '🎮 Games',
+  'rpg': '⚔️ RPG & Economy',
   'utility': '🛠️ Utility',
   'media': '🎞️ Media',
   'admin': '🛡️ Admin',
@@ -137,7 +139,7 @@ let handler = async (m, { conn, prefix: _p, args = [], command }) => {
 
 handler.help = ['menu']
 handler.tags = ['main']
-handler.command = /^(menu|help|allmenu|mainmenu|groupmenu|downloadmenu|toolsmenu|searchmenu|aimenu|gamemenu|utilitymenu|mediamenu|adminmenu|ownermenu)$/i
+handler.command = /^(menu|help|allmenu|mainmenu|groupmenu|downloadmenu|toolsmenu|searchmenu|aimenu|gamemenu|rpgmenu|utilitymenu|mediamenu|adminmenu|ownermenu)$/i
 
 module.exports = handler
 
