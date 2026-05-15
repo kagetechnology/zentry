@@ -1,26 +1,73 @@
-const { dbGet } = require('../../lib/functions')
+const { initRPG } = require('../../lib/rpg')
 
 let handler = async (m, { conn, args }) => {
   let target = m.sender
   
-  // Jika user ngetag orang lain (contoh: .dompet @628xxx)
   let mentioned = m.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
   if (mentioned.length > 0) target = mentioned[0]
   
   let targetKey = target.replace(/\./g, '_')
   
-  let money = dbGet(`users.${targetKey}.money`, 0)
-  let exp = dbGet(`users.${targetKey}.exp`, 0)
-  let level = Math.floor(Math.sqrt(exp / 100)) + 1 // Rumus simple level
+  // Inisialisasi/Ambil data
+  let user = initRPG(targetKey)
+  
+  let money = user.money
+  let exp = user.exp
+  let level = Math.floor(Math.sqrt(exp / 100)) + 1
+  let health = user.health
+  let stamina = user.stamina
   
   let tag = `@${target.split('@')[0]}`
   
-  let caption = `💼 *DOMPET & STATUS* 💼\n\n👤 Nama: ${tag}\n📊 Level: ${level}\n✨ EXP: ${exp} / ${(level * level) * 100}\n💰 Uang: Rp ${money.toLocaleString('id-ID')}`
+  // Visualisasi Bar
+  const renderBar = (val, max = 100, icon = '❤️', empty = '🖤') => {
+    let fill = Math.round((val / max) * 10)
+    if (fill < 0) fill = 0
+    if (fill > 10) fill = 10
+    return icon.repeat(fill) + empty.repeat(10 - fill)
+  }
+
+  let hpBar = renderBar(health, 100, '❤️', '🖤')
+  let spBar = renderBar(stamina, 100, '⚡', '☁️')
+
+  // Tools status
+  const toolStatus = (val) => val > 0 ? `${val}%` : '❌ Rusak/Tidak Punya'
+
+  let caption = `
+💼 *PROFIL & INVENTORI* 💼
+👤 Nama: ${tag}
+📊 Level: ${level}
+✨ EXP: ${exp} / ${(level * level) * 100}
+💰 Uang: Rp ${money.toLocaleString('id-ID')}
+
+❤️ *Health:* ${health}/100
+${hpBar}
+⚡ *Stamina:* ${stamina}/100
+${spBar}
+
+🛠️ *ALAT (TOOLS)*
+⛏️ Pickaxe: ${toolStatus(user.tools.pickaxe)}
+🎣 Fishing Rod: ${toolStatus(user.tools.fishingrod)}
+🗡️ Sword: ${toolStatus(user.tools.sword)}
+
+🎒 *ISI TAS (INVENTORY)*
+🧪 Potion: ${user.inventory.potion}x
+🪵 Kayu: ${user.inventory.kayu}x
+🪨 Batu: ${user.inventory.batu}x
+⛓️ Besi: ${user.inventory.besi}x
+🪙 Emas: ${user.inventory.emas}x
+💎 Berlian: ${user.inventory.berlian}x
+🐟 Ikan Lele: ${user.inventory.lele}x
+🐠 Ikan Nila: ${user.inventory.nila}x
+🎏 Ikan Koi: ${user.inventory.koi}x
+🦈 Ikan Hiu: ${user.inventory.hiu}x
+🥩 Daging Monster: ${user.inventory.daging_monster}x
+`.trim()
   
-  m.reply(caption)
+  m.reply(caption, null, { mentions: [target] })
 }
 
-handler.help = ['dompet', 'inventory', 'uang']
+handler.help = ['dompet', 'inventory', 'uang', 'inv']
 handler.tags = ['rpg']
 handler.command = /^(dompet|inventory|uang|inv|bal|balance)$/i
 

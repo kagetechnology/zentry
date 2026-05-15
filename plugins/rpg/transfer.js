@@ -33,7 +33,7 @@ let handler = async (m, { args, prefix, command }) => {
   dbSet(`users.${senderKey}.money`, senderMoney - amount)
   dbSet(`users.${targetKey}.money`, targetMoney + amount)
 
-  m.reply(`💸 *TRANSFER BERHASIL*\n\nKamu berhasil mentransfer uang sebesar *Rp ${amount.toLocaleString('id-ID')}* ke @${target.split('@')[0]}!`)
+  m.reply(`💸 *TRANSFER BERHASIL*\n\nKamu berhasil mentransfer uang sebesar *Rp ${amount.toLocaleString('id-ID')}* ke @${target.split('@')[0]}!`, null, { mentions: [target] })
 }
 
 handler.help = ['transfer @user <jumlah>']
