@@ -59,23 +59,13 @@ ${spBar}
 🗡️ Sword: ${toolStatus(user.tools.sword)}
 
 🎒 *ISI TAS (INVENTORY)*
-🧪 Potion: ${user.inventory.potion}x
-🪵 Kayu: ${user.inventory.kayu}x
-🪨 Batu: ${user.inventory.batu}x
-⛓️ Besi: ${user.inventory.besi}x
-🪙 Emas: ${user.inventory.emas}x
-💎 Berlian: ${user.inventory.berlian}x
-🐟 Ikan Lele: ${user.inventory.lele}x
-🐠 Ikan Nila: ${user.inventory.nila}x
-🎏 Ikan Koi: ${user.inventory.koi}x
-🦈 Ikan Hiu: ${user.inventory.hiu}x
-🥩 Daging Monster: ${user.inventory.daging_monster}x
-🐛 Cacing: ${user.inventory.cacing}x
+*Konsumsi:* 🧪 Potion: ${user.inventory.potion} | 🥩 Daging: ${user.inventory.daging_monster} | 🐛 Cacing: ${user.inventory.cacing}
+*Material:* 🪵 Kayu: ${user.inventory.kayu} | 🪨 Batu: ${user.inventory.batu} | ⛓️ Besi: ${user.inventory.besi}
+*Berharga:* 🪙 Emas: ${user.inventory.emas} | 💎 Berlian: ${user.inventory.berlian}
+*Hasil Pancing:* 🐟 Lele: ${user.inventory.lele} | 🐠 Nila: ${user.inventory.nila} | 🎏 Koi: ${user.inventory.koi} | 🦈 Hiu: ${user.inventory.hiu}
 
 🗑️ *BARANG RONGSOKAN*
-📦 Kardus: ${user.inventory.kardus}x
-🥫 Kaleng: ${user.inventory.kaleng}x
-🍾 Botol: ${user.inventory.botol}x
+📦 Kardus: ${user.inventory.kardus} | 🥫 Kaleng: ${user.inventory.kaleng} | 🍾 Botol: ${user.inventory.botol}
 `.trim()
   
   m.reply(caption, null, { mentions: [target] })
