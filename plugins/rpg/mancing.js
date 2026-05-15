@@ -17,6 +17,10 @@ let handler = async (m) => {
     return m.reply('❌ Stamina kamu tidak cukup! Tunggu beberapa saat atau istirahat.')
   }
 
+  if (user.inventory.cacing < 1) {
+    return m.reply('❌ Kamu tidak punya *Cacing* untuk dijadikan umpan!\nCari cacing dulu di tanah dengan perintah *.nangkap*.')
+  }
+
   // Cooldown 3 menit
   let lastMancing = user.lastMancing || 0
   let now = Date.now()
@@ -43,6 +47,7 @@ let handler = async (m) => {
   user.health -= 5
   user.stamina -= 10
   user.tools.fishingrod -= 3 // Durability berkurang 3%
+  user.inventory.cacing -= 1 // Umpan dimakan ikan
   user.lastMancing = now
 
   if (result.name === 'zonk' || amount === 0) {

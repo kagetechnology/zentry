@@ -33,12 +33,20 @@ let handler = async (m, { conn, args }) => {
   // Tools status
   const toolStatus = (val) => val > 0 ? `${val}%` : '❌ Rusak/Tidak Punya'
 
+  let bank = user.bank
+  let petStr = user.pet.type ? `${user.pet.type} (Lv.${user.pet.level})` : 'Tidak Punya'
+  let guildStr = user.guild ? user.guild : 'Tidak Bergabung'
+  
   let caption = `
 💼 *PROFIL & INVENTORI* 💼
 👤 Nama: ${tag}
 📊 Level: ${level}
 ✨ EXP: ${exp} / ${(level * level) * 100}
-💰 Uang: Rp ${money.toLocaleString('id-ID')}
+💰 Uang (Tangan): Rp ${money.toLocaleString('id-ID')}
+🏦 Uang (Bank): Rp ${bank.toLocaleString('id-ID')}
+
+🏰 Guild: ${guildStr}
+🐾 Pet: ${petStr}
 
 ❤️ *Health:* ${health}/100
 ${hpBar}
@@ -62,6 +70,12 @@ ${spBar}
 🎏 Ikan Koi: ${user.inventory.koi}x
 🦈 Ikan Hiu: ${user.inventory.hiu}x
 🥩 Daging Monster: ${user.inventory.daging_monster}x
+🐛 Cacing: ${user.inventory.cacing}x
+
+🗑️ *BARANG RONGSOKAN*
+📦 Kardus: ${user.inventory.kardus}x
+🥫 Kaleng: ${user.inventory.kaleng}x
+🍾 Botol: ${user.inventory.botol}x
 `.trim()
   
   m.reply(caption, null, { mentions: [target] })
