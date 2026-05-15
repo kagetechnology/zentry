@@ -168,15 +168,17 @@ async function handleMessage(conn, { messages, type }) {
 
       // Wrap pesan dengan helper methods
       const m = smsg(conn, rawMsg)
-      if (!m) continue
+      if (!m || !m.sender) continue
 
       // ── [FITUR: AFK] ──────────────────────────────────────────────────
-      let userKey = m.sender.replace(/\./g, '_')
-      let afkTime = dbGet(`users.${userKey}.afk.time`, -1)
-      if (afkTime > -1 && m.text && !m.text.startsWith(prefix) && !m.text.includes('afk')) {
-        const { formatUptime } = require('./lib/functions')
-        dbSet(`users.${userKey}.afk.time`, -1)
-        m.reply(`Kamu berhenti AFK setelah ${formatUptime(Date.now() - afkTime)}`)
+      if (m.sender) {
+        let userKey = m.sender.replace(/\./g, '_')
+        let afkTime = dbGet(`users.${userKey}.afk.time`, -1)
+        if (afkTime > -1 && m.text && !m.text.startsWith(prefix) && !m.text.includes('afk')) {
+          const { formatUptime } = require('./lib/functions')
+          dbSet(`users.${userKey}.afk.time`, -1)
+          m.reply(`Kamu berhenti AFK setelah ${formatUptime(Date.now() - afkTime)}`)
+        }
       }
 
       // Cek apakah mention orang yang AFK
@@ -219,24 +221,37 @@ async function handleMessage(conn, { messages, type }) {
       conn.tictactoe = conn.tictactoe || {}
       if (m.isGroup && m.chat in conn.tictactoe) {
         const game = conn.tictactoe[m.chat]
-        if (game.status === 'PLAYING') {
+        
+        // Cek nyerah tanpa prefix
+        if (m.text.toLowerCase() === 'nyerah') {
+          if (m.sender === game.playerX || m.sender === game.playerO) {
+            if (game.status === 'WAITING') {
+              delete conn.tictactoe[m.chat]
+              await m.reply(`🏳️ Room tictactoe dibatalkan oleh @${m.sender.split('@')[0]}`, null, { mentions: [m.sender] })
+            } else {
+              let winner = m.sender === game.playerX ? game.playerO : game.playerX
+              delete conn.tictactoe[m.chat]
+              await m.reply(`🏳️ @${m.sender.split('@')[0]} menyerah!\nPemenang: @${winner.split('@')[0]}`, null, { mentions: [m.sender, winner] })
+            }
+          }
+        } else if (game.status === 'PLAYING') {
           // Cek jika pesan berupa angka 1-9
           if (/^[1-9]$/.test(m.text)) {
             let res = game.play(m.sender, m.text)
             if (res === -2) {
-              m.reply(`⏳ Tunggu giliranmu! Sekarang giliran @${game.turn.split('@')[0]}`, null, { mentions: [game.turn] })
+              await m.reply(`⏳ Tunggu giliranmu! Sekarang giliran @${game.turn.split('@')[0]}`, null, { mentions: [game.turn] })
             } else if (res === -3) {
-              m.reply('❌ Posisi tidak valid atau sudah terisi!')
+              await m.reply('❌ Posisi tidak valid atau sudah terisi!')
             } else if (res === 0) {
               let str = `🎮 *TIC-TAC-TOE* 🎮\n\nGiliran: @${game.turn.split('@')[0]}\n\n${game.render()}`
-              conn.sendMessage(m.chat, { text: str, mentions: [game.turn] }, { quoted: m })
+              await conn.sendMessage(m.chat, { text: str, mentions: [game.turn] }, { quoted: m })
             } else if (res === 1) { // Menang
               let str = `🎉 *TIC-TAC-TOE SELESAI* 🎉\n\nPemenang: @${game.winner.split('@')[0]} 🏆\n\n${game.render()}`
-              conn.sendMessage(m.chat, { text: str, mentions: [game.winner] }, { quoted: m })
+              await conn.sendMessage(m.chat, { text: str, mentions: [game.winner] }, { quoted: m })
               delete conn.tictactoe[m.chat]
             } else if (res === 2) { // Seri
               let str = `🤝 *TIC-TAC-TOE SERI* 🤝\n\nPermainan berakhir seri!\n\n${game.render()}`
-              conn.sendMessage(m.chat, { text: str }, { quoted: m })
+              await conn.sendMessage(m.chat, { text: str }, { quoted: m })
               delete conn.tictactoe[m.chat]
             }
           }

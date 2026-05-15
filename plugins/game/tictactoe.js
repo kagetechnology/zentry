@@ -11,6 +11,11 @@ let handler = async (m, { conn, text, prefix, command, isGroup }) => {
     let game = conn.tictactoe[m.chat]
     if (m.sender !== game.playerX && m.sender !== game.playerO) return m.reply('Kamu tidak sedang bermain dalam game ini!')
     
+    if (game.status === 'WAITING') {
+      delete conn.tictactoe[m.chat]
+      return m.reply(`🏳️ Room tictactoe dibatalkan oleh @${m.sender.split('@')[0]}`, null, { mentions: [m.sender] })
+    }
+
     let winner = m.sender === game.playerX ? game.playerO : game.playerX
     delete conn.tictactoe[m.chat]
     return m.reply(`🏳️ @${m.sender.split('@')[0]} menyerah!\nPemenang: @${winner.split('@')[0]}`, null, { mentions: [m.sender, winner] })
