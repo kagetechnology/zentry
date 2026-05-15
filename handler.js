@@ -328,7 +328,12 @@ async function handleMessage(conn, { messages, type }) {
       // Cek apakah fitur khusus owner
       const { ownerNumber } = require('./config')
       if (plugin.owner) {
-        const isOwner = ownerNumber.some(num => m.sender.startsWith(num.replace(/\D/g, '')))
+        // Ambil bagian nomor dari sender (support format @s.whatsapp.net, @lid, dll)
+        const senderNum = m.sender.split('@')[0].replace(/\D/g, '')
+        const isOwner = ownerNumber.some(num => {
+          const cleanNum = num.replace(/\D/g, '')
+          return senderNum === cleanNum || m.sender === cleanNum || m.sender.startsWith(cleanNum)
+        })
         if (!isOwner) return m.reply('❌ Perintah ini hanya dapat digunakan oleh Owner!')
       }
 

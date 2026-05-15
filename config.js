@@ -11,7 +11,7 @@ module.exports = {
 
   // ─── Owner ──────────────────────────────────────────────────
   // Format: '628xxxxxxxxxx' (tanpa +)
-  ownerNumber: ['62881038727987'],
+  ownerNumber: ['62881038727987', '119361469690092'],
 
   // ─── API Keys ───────────────────────────────────────────────
   // Dapatkan API Key gratis dari https://openrouter.ai/
