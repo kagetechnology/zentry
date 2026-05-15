@@ -1,4 +1,5 @@
 const { dbGet, dbSet } = require('../../lib/functions')
+const { getRandomTip } = require('../../lib/rpg')
 
 let handler = async (m) => {
   let userKey = m.sender.replace(/\./g, '_')
@@ -24,7 +25,7 @@ let handler = async (m) => {
   dbSet(`users.${userKey}.exp`, currentExp + rewardExp)
   dbSet(`users.${userKey}.lastDaily`, now)
   
-  m.reply(`🎉 *KLAIM HARIAN BERHASIL*\n\nKamu mendapatkan:\n💰 Uang: ${rewardMoney}\n✨ EXP: ${rewardExp}\n\nKlaim lagi besok ya!`)
+  m.reply(`🎉 *KLAIM HARIAN BERHASIL*\n\nKamu mendapatkan:\n💰 Uang: ${rewardMoney}\n✨ EXP: ${rewardExp}\n\nKlaim lagi besok ya!\n\n${getRandomTip()}`)
 }
 
 handler.help = ['daily', 'claim']

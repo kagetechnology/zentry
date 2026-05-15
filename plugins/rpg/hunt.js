@@ -1,5 +1,5 @@
 const { dbSet, pickRandom } = require('../../lib/functions')
-const { initRPG } = require('../../lib/rpg')
+const { initRPG, getRandomTip } = require('../../lib/rpg')
 
 let handler = async (m) => {
   let userKey = m.sender.replace(/\./g, '_')
@@ -53,7 +53,7 @@ let handler = async (m) => {
     user.health = 10 // Dihidupkan kembali dengan 10 HP
     user.money = Math.floor(user.money * 0.8) // Hilang 20% uang
     dbSet(`users.${userKey}`, user)
-    return m.reply(`☠️ *KAMU TERBUNUH!* ☠️\n\nKamu berhadapan dengan *${monster.name}* dan serangan fatalnya membunuhmu!\n\nSeorang penduduk desa menemukanmu pingsan dan merawatmu.\nAkibatnya:\n💸 Uangmu hilang 20% (Sisa: Rp ${user.money.toLocaleString('id-ID')})\n❤️ Health sekarat (10/100)\n🗡️ Sword Durability: ${user.tools.sword}%`)
+    return m.reply(`☠️ *KAMU TERBUNUH!* ☠️\n\nKamu berhadapan dengan *${monster.name}* dan serangan fatalnya membunuhmu!\n\nSeorang penduduk desa menemukanmu pingsan dan merawatmu.\nAkibatnya:\n💸 Uangmu hilang 20% (Sisa: Rp ${user.money.toLocaleString('id-ID')})\n❤️ Health sekarat (10/100)\n🗡️ Sword Durability: ${user.tools.sword}%\n\n${getRandomTip()}`)
   }
 
   // Berhasil menang
@@ -65,7 +65,7 @@ let handler = async (m) => {
   
   let durStatus = user.tools.sword <= 0 ? '\n⚠️ *Pedangmu patah!*' : `\n🗡️ Sword Durability: ${user.tools.sword}%`
 
-  m.reply(`⚔️ *PERTARUNGAN SELESAI* ⚔️\n\nKamu berhasil membantai *${monster.name}*!\n\n*Loot:* 💰 Rp ${monster.rewardMoney.toLocaleString('id-ID')} | ✨ ${monster.rewardExp} EXP | 📦 ${monster.rewardItem.amount}x ${monster.rewardItem.item}\n\n*Kondisimu:*\n❤️ Health: -${monster.hpDamage} (Sisa: ${user.health}/100)${durStatus}`)
+  m.reply(`⚔️ *PERTARUNGAN SELESAI* ⚔️\n\nKamu berhasil membantai *${monster.name}*!\n\n*Loot:* 💰 Rp ${monster.rewardMoney.toLocaleString('id-ID')} | ✨ ${monster.rewardExp} EXP | 📦 ${monster.rewardItem.amount}x ${monster.rewardItem.item}\n\n*Kondisimu:*\n❤️ Health: -${monster.hpDamage} (Sisa: ${user.health}/100)${durStatus}\n\n${getRandomTip()}`)
 }
 
 handler.help = ['hunt', 'berburu']

@@ -1,5 +1,5 @@
 const { dbSet } = require('../../lib/functions')
-const { initRPG } = require('../../lib/rpg')
+const { initRPG, getRandomTip } = require('../../lib/rpg')
 
 let handler = async (m) => {
   let userKey = m.sender.replace(/\./g, '_')
@@ -34,7 +34,7 @@ let handler = async (m) => {
 
   dbSet(`users.${userKey}`, user)
 
-  m.reply(`🧱 *KERJA KULI SELESAI* 🧱\n\nKamu mengangkut batu bata dan semen seharian. Mandor memberimu upah sebesar 💰 Rp ${upah.toLocaleString('id-ID')}!\n\n❤️ -15 Health\n⚡ -20 Stamina\nSaldo sekarang: Rp ${user.money.toLocaleString('id-ID')}`)
+  m.reply(`🧱 *KERJA KULI SELESAI* 🧱\n\nKamu mengangkut batu bata dan semen seharian. Mandor memberimu upah sebesar 💰 Rp ${upah.toLocaleString('id-ID')}!\n\n❤️ -15 Health\n⚡ -20 Stamina\nSaldo sekarang: Rp ${user.money.toLocaleString('id-ID')}\n\n${getRandomTip()}`)
 }
 
 handler.help = ['kuli', 'kerja']

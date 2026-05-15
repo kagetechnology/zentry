@@ -1,5 +1,5 @@
 const { dbSet, pickRandom } = require('../../lib/functions')
-const { initRPG } = require('../../lib/rpg')
+const { initRPG, getRandomTip } = require('../../lib/rpg')
 
 let handler = async (m) => {
   let userKey = m.sender.replace(/\./g, '_')
@@ -47,7 +47,7 @@ let handler = async (m) => {
 
   if (result.name === 'zonk' || amount === 0) {
     dbSet(`users.${userKey}`, user)
-    return m.reply(`⛏️ Kamu menambang seharian, tapi tidak dapat apa-apa!\n\n❤️ -10 Health\n⚡ -15 Stamina\n🛠️ Pickaxe Durability: ${user.tools.pickaxe}%`)
+    return m.reply(`⛏️ Kamu menambang seharian, tapi tidak dapat apa-apa!\n\n❤️ -10 Health\n⚡ -15 Stamina\n🛠️ Pickaxe Durability: ${user.tools.pickaxe}%\n\n${getRandomTip()}`)
   }
   
   // Masukkan ke inventory
@@ -57,7 +57,7 @@ let handler = async (m) => {
   
   let durStatus = user.tools.pickaxe <= 0 ? '\n⚠️ *Pickaxe kamu hancur!*' : `\n🛠️ Pickaxe Durability: ${user.tools.pickaxe}%`
 
-  m.reply(`⛏️ *HASIL TAMBANG*\n\nKamu menggali dengan keras dan berhasil mengumpulkan:\n*${amount}x ${result.label}*\n\nBarang telah dimasukkan ke dalam Tas (Inventory).\n\n❤️ -10 Health\n⚡ -15 Stamina${durStatus}`)
+  m.reply(`⛏️ *HASIL TAMBANG*\n\nKamu menggali dengan keras dan berhasil mengumpulkan:\n*${amount}x ${result.label}*\n\nBarang telah dimasukkan ke dalam Tas (Inventory).\n\n❤️ -10 Health\n⚡ -15 Stamina${durStatus}\n\n${getRandomTip()}`)
 }
 
 handler.help = ['tambang', 'mining']

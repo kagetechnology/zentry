@@ -1,5 +1,5 @@
 const { dbSet, pickRandom } = require('../../lib/functions')
-const { initRPG } = require('../../lib/rpg')
+const { initRPG, getRandomTip } = require('../../lib/rpg')
 
 let handler = async (m) => {
   let userKey = m.sender.replace(/\./g, '_')
@@ -47,7 +47,7 @@ let handler = async (m) => {
 
   if (result.name === 'zonk' || amount === 0) {
     dbSet(`users.${userKey}`, user)
-    return m.reply(`🎣 Tarik... yah lepas! Kamu cuma dapat ${result.label}.\n\n❤️ -5 Health\n⚡ -10 Stamina\n🎣 Fishing Rod Durability: ${user.tools.fishingrod}%`)
+    return m.reply(`🎣 Tarik... yah lepas! Kamu cuma dapat ${result.label}.\n\n❤️ -5 Health\n⚡ -10 Stamina\n🎣 Fishing Rod Durability: ${user.tools.fishingrod}%\n\n${getRandomTip()}`)
   }
   
   // Masukkan ke inventory
@@ -57,7 +57,7 @@ let handler = async (m) => {
   
   let durStatus = user.tools.fishingrod <= 0 ? '\n⚠️ *Pancingan kamu rusak!*' : `\n🎣 Fishing Rod Durability: ${user.tools.fishingrod}%`
 
-  m.reply(`🎣 *HASIL MEMANCING*\n\nKamu melempar kail dan berhasil mendapatkan:\n*${amount}x ${result.label}*\n\nIkan dimasukkan ke dalam Tas (Inventory).\n\n❤️ -5 Health\n⚡ -10 Stamina${durStatus}`)
+  m.reply(`🎣 *HASIL MEMANCING*\n\nKamu melempar kail dan berhasil mendapatkan:\n*${amount}x ${result.label}*\n\nIkan dimasukkan ke dalam Tas (Inventory).\n\n❤️ -5 Health\n⚡ -10 Stamina${durStatus}\n\n${getRandomTip()}`)
 }
 
 handler.help = ['mancing', 'fishing']
