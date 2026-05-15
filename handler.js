@@ -25,6 +25,29 @@ const { generateCard }         = require('./lib/cardGenerator')
 const { prefix }               = require('./config')
 const logger                   = require('./lib/print')
 
+// ─── Resolve LID → phone number ─────────────────────────────
+/**
+ * WhatsApp kadang mengirim sender dalam format LID (@lid) bukan nomor HP.
+ * Fungsi ini mencoba memetakan LID kembali ke nomor HP lewat conn.contacts.
+ */
+function resolveSenderPhone(sender, conn) {
+  const numPart = sender.split('@')[0]
+  // Sudah berupa nomor HP biasa
+  if (/^\d{10,15}$/.test(numPart)) return numPart
+  // Coba resolve via contacts
+  try {
+    const contacts = conn.contacts || {}
+    if (contacts[sender]?.id) return contacts[sender].id.split('@')[0]
+    // Cari di semua kontak berdasarkan LID
+    for (const key of Object.keys(contacts)) {
+      const c = contacts[key]
+      if (c.lid === sender && c.id) return c.id.split('@')[0]
+    }
+  } catch {}
+  return numPart
+}
+
+
 // ─── Plugin registry ─────────────────────────────────────────
 const plugins = new Map()
 
@@ -328,12 +351,9 @@ async function handleMessage(conn, { messages, type }) {
       // Cek apakah fitur khusus owner
       const { ownerNumber } = require('./config')
       if (plugin.owner) {
-        // Ambil bagian nomor dari sender (support format @s.whatsapp.net, @lid, dll)
-        const senderNum = m.sender.split('@')[0].replace(/\D/g, '')
-        const isOwner = ownerNumber.some(num => {
-          const cleanNum = num.replace(/\D/g, '')
-          return senderNum === cleanNum || m.sender === cleanNum || m.sender.startsWith(cleanNum)
-        })
+        // Resolve LID ke nomor HP sebelum dibandingkan
+        const senderPhone = resolveSenderPhone(m.sender, conn)
+        const isOwner = ownerNumber.some(num => senderPhone === num.replace(/\D/g, ''))
         if (!isOwner) return m.reply('❌ Perintah ini hanya dapat digunakan oleh Owner!')
       }
 
