@@ -6,7 +6,7 @@ let handler = async (m, { args, prefix, command }) => {
   let user = initRPG(userKey)
 
   if (args.length === 0) {
-    let petStatus = user.pet.type 
+    let petStatus = user?.pet?.type 
       ? `🐾 *Peliharaanmu:* ${user.pet.type} (Lv. ${user.pet.level})\n✨ *EXP:* ${user.pet.exp} / ${(user.pet.level * 100)}\n\nGunakan *${prefix}feed* untuk memberi makan Daging Monster.`
       : `❌ Kamu belum punya hewan peliharaan.\n\n*Beli Telur Pet:*\n🐈 Kucing : Rp 50.000\n🦊 Rubah : Rp 100.000\n🐉 Naga : Rp 500.000\n\nKetik *${prefix}${command} <jenis>* untuk membeli.`
     

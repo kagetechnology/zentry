@@ -5,7 +5,7 @@ let handler = async (m) => {
   let userKey = m.sender.replace(/\./g, '_')
   let user = initRPG(userKey)
 
-  if (!user.pet.type) {
+  if (!user?.pet?.type) {
     return m.reply('❌ Kamu belum punya hewan peliharaan untuk diberi makan!\nBeli dulu menggunakan perintah *.pet*')
   }
 

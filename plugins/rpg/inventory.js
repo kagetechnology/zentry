@@ -33,9 +33,9 @@ let handler = async (m, { conn, args }) => {
   // Tools status
   const toolStatus = (val) => val > 0 ? `${val}%` : '❌ Rusak/Tidak Punya'
 
-  let bank = user.bank
-  let petStr = user.pet.type ? `${user.pet.type} (Lv.${user.pet.level})` : 'Tidak Punya'
-  let guildStr = user.guild ? user.guild : 'Tidak Bergabung'
+  let bank = user.bank || 0
+  let petStr = user?.pet?.type ? `${user.pet.type} (Lv.${user.pet.level})` : 'Tidak Punya'
+  let guildStr = user?.guild ? user.guild : 'Tidak Bergabung'
   
   let caption = `
 💼 *PROFIL & INVENTORI* 💼
