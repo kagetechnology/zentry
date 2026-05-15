@@ -1,5 +1,5 @@
 // plugins/debugadmin.js
-const { isAdmin } = require('../lib/myfunc')
+const { isAdmin } = require('../../lib/myfunc')
 
 let handler = async (m, { conn }) => {
   if (!m.isGroup) return m.reply('❌ Grup only!')

@@ -258,6 +258,27 @@ async function startBot({ authMethod = null, phoneNumber = null } = {}) {
     if (connection === 'open') {
       activeConn = conn
       logger.info(`✅ ${botName} v${botVersion} berhasil terhubung!`)
+      
+      // Jalankan auto-checker sewa hanya sekali
+      if (!global.checkerStarted) {
+        global.checkerStarted = true
+        setInterval(async () => {
+          if (!activeConn) return
+          const now = Date.now()
+          const groups = dbGet('groups', {})
+          for (const [id, data] of Object.entries(groups)) {
+            if (data.expired && data.expired > 0 && now > data.expired) {
+              dbSet(`groups.${id}.expired`, 0) // reset
+              try {
+                await activeConn.sendMessage(id, { text: '⏳ Masa sewa bot di grup ini telah habis. Terima kasih telah menggunakan Zentry!\n\nBot akan otomatis keluar.' })
+                const { sleep } = require('./lib/functions')
+                await sleep(3000)
+                await activeConn.groupLeave(id)
+              } catch (e) {}
+            }
+          }
+        }, 60000) // Cek setiap 1 menit
+      }
     }
   })
 

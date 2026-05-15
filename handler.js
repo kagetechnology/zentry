@@ -217,6 +217,13 @@ async function handleMessage(conn, { messages, type }) {
       const plugin = findPlugin(command)
       if (!plugin) continue
 
+      // Cek apakah fitur khusus owner
+      const { ownerNumber } = require('./config')
+      if (plugin.owner) {
+        const isOwner = ownerNumber.some(num => m.sender.startsWith(num.replace(/\D/g, '')))
+        if (!isOwner) return m.reply('❌ Perintah ini hanya dapat digunakan oleh Owner!')
+      }
+
       const ctx = {
         conn,
         args,
