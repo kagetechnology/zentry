@@ -205,15 +205,20 @@ async function handleMessage(conn, { messages, type }) {
 
       // ── [FITUR: TEBAK KATA] — cek jawaban game aktif ─────────────────
       conn.tebakkata = conn.tebakkata || {}
-      if (m.isGroup && m.chat in conn.tebakkata) {
+      if (conn.tebakkata[m.chat]) {
         const game = conn.tebakkata[m.chat]
-        if (m.text.toLowerCase() === game.jawaban) {
+        const userAnswer = m.text.toLowerCase().trim()
+        logger.info(`[TEBAKKATA] Chat: ${m.chat} | Jawaban User: "${userAnswer}" | Jawaban Benar: "${game.jawaban}"`)
+        if (userAnswer === game.jawaban) {
           clearTimeout(game.timeout)
           
-          // Tambahkan EXP ke database
+          // Tambahkan EXP ke database (pakai initRPG agar tidak di-overwrite plugin RPG lain)
+          const { initRPG } = require('./lib/rpg')
           let userKey = m.sender.replace(/\./g, '_')
-          let currentExp = dbGet(`users.${userKey}.exp`, 0)
-          dbSet(`users.${userKey}.exp`, currentExp + game.poin)
+          let rpgUser = initRPG(userKey)
+          rpgUser.exp = (rpgUser.exp || 0) + game.poin
+          dbSet(`users.${userKey}`, rpgUser)
+          logger.info(`[TEBAKKATA] EXP disimpan → ${m.sender}: ${rpgUser.exp}`)
           
           await conn.sendMessage(m.chat, {
             text: `🎉 *BENAR!* 🎉\n\nSelamat @${m.sender.split('@')[0]}, jawaban kamu benar!\nJawaban: *${game.jawaban.toUpperCase()}*\nHadiah: +${game.poin} XP`,
@@ -275,8 +280,10 @@ async function handleMessage(conn, { messages, type }) {
           game.terjawab.push(answer)
           
           let userKey = m.sender.replace(/\./g, '_')
-          let currentExp = dbGet(`users.${userKey}.exp`, 0)
-          dbSet(`users.${userKey}.exp`, currentExp + game.poin)
+          const { initRPG } = require('./lib/rpg')
+          let rpgUser = initRPG(userKey)
+          rpgUser.exp = (rpgUser.exp || 0) + game.poin
+          dbSet(`users.${userKey}`, rpgUser)
           
           if (game.terjawab.length >= game.jawaban.length) {
             clearTimeout(game.waktu)
