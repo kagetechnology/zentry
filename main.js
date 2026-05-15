@@ -68,12 +68,31 @@ function loadPlugin(filePath) {
 }
 
 /**
+ * Baca semua file secara rekursif dari folder
+ */
+function walkSync(dir, filelist = []) {
+  const files = fs.readdirSync(dir)
+  for (const file of files) {
+    const dirFile = path.join(dir, file)
+    const dirent = fs.statSync(dirFile)
+    if (dirent.isDirectory()) {
+      filelist = walkSync(dirFile, filelist)
+    } else {
+      if (file.endsWith('.js')) {
+        filelist.push(dirFile)
+      }
+    }
+  }
+  return filelist
+}
+
+/**
  * Load semua plugin dari folder plugins/ saat startup.
  */
 function loadAllPlugins() {
-  const files = fs.readdirSync(PLUGINS_DIR).filter(f => f.endsWith('.js'))
-  for (const file of files) {
-    const result = loadPlugin(path.join(PLUGINS_DIR, file))
+  const files = walkSync(PLUGINS_DIR)
+  for (const filePath of files) {
+    const result = loadPlugin(filePath)
     if (result) logger.info(`[PLUGIN] Dimuat: .${result.cmdName} [${result.tag}]`)
   }
   logger.info(`[PLUGIN] Total plugin aktif: ${plugins.size}`)
@@ -97,54 +116,62 @@ async function notifyOwner(text) {
 }
 
 /**
- * Pantau folder plugins/ dan reload otomatis saat ada perubahan.
- * Debounce 500ms untuk hindari trigger ganda saat save editor.
+ * Pantau folder plugins/ dan reload otomatis saat ada perubahan (menggunakan chokidar).
  */
 function watchPlugins() {
-  const debounce = new Map()
-
-  fs.watch(PLUGINS_DIR, (eventType, filename) => {
-    if (!filename || !filename.endsWith('.js')) return
-
-    // Debounce per file
-    if (debounce.has(filename)) clearTimeout(debounce.get(filename))
-    debounce.set(filename, setTimeout(async () => {
-      debounce.delete(filename)
-
-      const filePath    = path.join(PLUGINS_DIR, filename)
-      const fileExists  = fs.existsSync(filePath)
-      const wasLoaded   = plugins.has(filename)
-
-      // ── File dihapus ─────────────────────────────────────
-      if (!fileExists && wasLoaded) {
-        plugins.delete(filename)
-        const msg = `🗑️ *Plugin Dihapus*\n\`${filename}\` telah dihapus dari registry.\nTotal plugin aktif: ${plugins.size}`
-        logger.warn(`[PLUGIN] Dihapus: ${filename} | Total: ${plugins.size}`)
-        await notifyOwner(msg)
-        return
-      }
-
-      if (!fileExists) return
-
-      // ── File baru atau diupdate ───────────────────────────
-      const result = loadPlugin(filePath)
-      if (!result) return
-
-      if (!wasLoaded) {
-        // Plugin baru ditambahkan
-        const msg = `✅ *Plugin Baru Ditambahkan*\n\`${result.file}\`\nCommand: \`.${result.cmdName}\`\nTag: \`[${result.tag}]\`\nTotal plugin aktif: ${plugins.size}`
-        logger.info(`[PLUGIN] Ditambahkan: .${result.cmdName} [${result.tag}] | Total: ${plugins.size}`)
-        await notifyOwner(msg)
-      } else {
-        // Plugin diupdate/disave ulang
-        const msg = `🔄 *Plugin Diperbarui*\n\`${result.file}\`\nCommand: \`.${result.cmdName}\`\nTag: \`[${result.tag}]\`\nReload selesai tanpa restart.`
-        logger.info(`[PLUGIN] Diperbarui: .${result.cmdName} | Total: ${plugins.size}`)
-        await notifyOwner(msg)
-      }
-    }, 500))
+  const chokidar = require('chokidar')
+  
+  // Initialize watcher
+  const watcher = chokidar.watch(PLUGINS_DIR, {
+    ignored: /(^|[\/\\])\../, // ignore dotfiles
+    persistent: true,
+    ignoreInitial: true // Jangan trigger add pada startup karena sudah diload
   })
 
-  logger.info(`[PLUGIN] Hot reload aktif — memantau folder plugins/`)
+  // Event handler
+  const handleChange = async (filePath) => {
+    if (!filePath.endsWith('.js')) return
+    const filename = path.basename(filePath)
+    const fileExists = fs.existsSync(filePath)
+    const wasLoaded = plugins.has(filename)
+
+    // ── File dihapus ─────────────────────────────────────
+    if (!fileExists && wasLoaded) {
+      plugins.delete(filename)
+      const msg = `🗑️ *Plugin Dihapus*\n\`${filename}\` telah dihapus dari registry.\nTotal plugin aktif: ${plugins.size}`
+      logger.warn(`[PLUGIN] Dihapus: ${filename} | Total: ${plugins.size}`)
+      await notifyOwner(msg)
+      return
+    }
+
+    if (!fileExists) return
+
+    // ── File baru atau diupdate ───────────────────────────
+    const result = loadPlugin(filePath)
+    if (!result) return
+
+    if (!wasLoaded) {
+      // Plugin baru ditambahkan
+      const msg = `✅ *Plugin Baru Ditambahkan*\n\`${result.file}\`\nCommand: \`.${result.cmdName}\`\nTag: \`[${result.tag}]\`\nTotal plugin aktif: ${plugins.size}`
+      logger.info(`[PLUGIN] Ditambahkan: .${result.cmdName} [${result.tag}] | Total: ${plugins.size}`)
+      await notifyOwner(msg)
+    } else {
+      // Plugin diupdate/disave ulang
+      const msg = `🔄 *Plugin Diperbarui*\n\`${result.file}\`\nCommand: \`.${result.cmdName}\`\nTag: \`[${result.tag}]\`\nReload selesai tanpa restart.`
+      logger.info(`[PLUGIN] Diperbarui: .${result.cmdName} | Total: ${plugins.size}`)
+      await notifyOwner(msg)
+    }
+  }
+
+  watcher
+    .on('add', handleChange)
+    .on('change', handleChange)
+    .on('unlink', (filePath) => {
+      const filename = path.basename(filePath)
+      if (plugins.has(filename)) handleChange(filePath)
+    })
+
+  logger.info(`[PLUGIN] Hot reload (chokidar) aktif — memantau folder plugins/ dan isinya`)
 }
 
 // ═══════════════════════════════════════════════════════════════
