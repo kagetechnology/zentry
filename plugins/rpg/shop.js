@@ -11,7 +11,8 @@ Gunakan perintah \`.sell <item> <jumlah>\` untuk menjual.
 - 🗡️ Sword : Rp 5.000 (Durability 100%)
 
 🔴 *BARANG YANG DIBELI TOKO (BISA DIJUAL):*
-*Hasil Tambang:*
+*Hasil Alam:*
+- 🪵 Kayu : Rp 10
 - 🪨 Batu : Rp 20
 - ⛓️ Besi : Rp 100
 - 🪙 Emas : Rp 1.000

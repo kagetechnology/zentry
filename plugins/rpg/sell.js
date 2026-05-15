@@ -2,6 +2,7 @@ const { dbSet } = require('../../lib/functions')
 const { initRPG } = require('../../lib/rpg')
 
 const sellPrices = {
+  kayu: 10,
   batu: 20,
   besi: 100,
   emas: 1000,
