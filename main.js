@@ -128,6 +128,28 @@ function watchPlugins() {
     ignoreInitial: true // Jangan trigger add pada startup karena sudah diload
   })
 
+  let notifyTimer = null
+  let pendingAdds = new Set()
+  let pendingUpdates = new Set()
+  let pendingDeletes = new Set()
+
+  const scheduleNotification = () => {
+    clearTimeout(notifyTimer)
+    notifyTimer = setTimeout(async () => {
+      let msg = `🔥 *Hot Reload Selesai*\n\n`
+      if (pendingAdds.size > 0) msg += `✅ *Ditambahkan (${pendingAdds.size}):*\n- ${Array.from(pendingAdds).join('\n- ')}\n\n`
+      if (pendingUpdates.size > 0) msg += `🔄 *Diperbarui (${pendingUpdates.size}):*\n- ${Array.from(pendingUpdates).join('\n- ')}\n\n`
+      if (pendingDeletes.size > 0) msg += `🗑️ *Dihapus (${pendingDeletes.size}):*\n- ${Array.from(pendingDeletes).join('\n- ')}\n\n`
+      msg += `Total plugin aktif: ${plugins.size}`
+
+      await notifyOwner(msg.trim())
+
+      pendingAdds.clear()
+      pendingUpdates.clear()
+      pendingDeletes.clear()
+    }, 3000) // 3 detik debounce
+  }
+
   // Event handler
   const handleChange = async (filePath) => {
     if (!filePath.endsWith('.js')) return
@@ -138,9 +160,9 @@ function watchPlugins() {
     // ── File dihapus ─────────────────────────────────────
     if (!fileExists && wasLoaded) {
       plugins.delete(filename)
-      const msg = `🗑️ *Plugin Dihapus*\n\`${filename}\` telah dihapus dari registry.\nTotal plugin aktif: ${plugins.size}`
       logger.warn(`[PLUGIN] Dihapus: ${filename} | Total: ${plugins.size}`)
-      await notifyOwner(msg)
+      pendingDeletes.add(filename)
+      scheduleNotification()
       return
     }
 
@@ -152,15 +174,15 @@ function watchPlugins() {
 
     if (!wasLoaded) {
       // Plugin baru ditambahkan
-      const msg = `✅ *Plugin Baru Ditambahkan*\n\`${result.file}\`\nCommand: \`.${result.cmdName}\`\nTag: \`[${result.tag}]\`\nTotal plugin aktif: ${plugins.size}`
       logger.info(`[PLUGIN] Ditambahkan: .${result.cmdName} [${result.tag}] | Total: ${plugins.size}`)
-      await notifyOwner(msg)
+      pendingAdds.add(filename)
     } else {
       // Plugin diupdate/disave ulang
-      const msg = `🔄 *Plugin Diperbarui*\n\`${result.file}\`\nCommand: \`.${result.cmdName}\`\nTag: \`[${result.tag}]\`\nReload selesai tanpa restart.`
       logger.info(`[PLUGIN] Diperbarui: .${result.cmdName} | Total: ${plugins.size}`)
-      await notifyOwner(msg)
+      pendingUpdates.add(filename)
     }
+    
+    scheduleNotification()
   }
 
   watcher
