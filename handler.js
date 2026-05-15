@@ -170,6 +170,27 @@ async function handleMessage(conn, { messages, type }) {
       const m = smsg(conn, rawMsg)
       if (!m) continue
 
+      // ── [FITUR: AFK] ──────────────────────────────────────────────────
+      let userKey = m.sender.replace(/\./g, '_')
+      let afkTime = dbGet(`users.${userKey}.afk.time`, -1)
+      if (afkTime > -1 && m.text && !m.text.startsWith(prefix) && !m.text.includes('afk')) {
+        const { formatUptime } = require('./lib/functions')
+        dbSet(`users.${userKey}.afk.time`, -1)
+        m.reply(`Kamu berhenti AFK setelah ${formatUptime(Date.now() - afkTime)}`)
+      }
+
+      // Cek apakah mention orang yang AFK
+      let mentions = rawMsg.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
+      for (let jid of mentions) {
+        let jidKey = jid.replace(/\./g, '_')
+        let jidAfk = dbGet(`users.${jidKey}.afk.time`, -1)
+        if (jidAfk > -1) {
+          const { formatUptime } = require('./lib/functions')
+          let reason = dbGet(`users.${jidKey}.afk.reason`, 'Tanpa alasan')
+          m.reply(`Ssstt! Jangan tag dia, dia sedang AFK.\n\nAlasan: ${reason}\nSejak: ${formatUptime(Date.now() - jidAfk)} lalu.`)
+        }
+      }
+
       // ── [FITUR: ANTILINK & ANTISPAM] — jalankan di semua pesan grup ──
       if (m.isGroup && m.text) {
         await runAntilink(conn, m).catch(() => {})
