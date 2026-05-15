@@ -209,6 +209,12 @@ async function handleMessage(conn, { messages, type }) {
         const game = conn.tebakkata[m.chat]
         if (m.text.toLowerCase() === game.jawaban) {
           clearTimeout(game.timeout)
+          
+          // Tambahkan EXP ke database
+          let userKey = m.sender.replace(/\./g, '_')
+          let currentExp = dbGet(`users.${userKey}.exp`, 0)
+          dbSet(`users.${userKey}.exp`, currentExp + game.poin)
+          
           await conn.sendMessage(m.chat, {
             text: `🎉 *BENAR!* 🎉\n\nSelamat @${m.sender.split('@')[0]}, jawaban kamu benar!\nJawaban: *${game.jawaban.toUpperCase()}*\nHadiah: +${game.poin} XP`,
             mentions: [m.sender]
