@@ -215,6 +215,65 @@ async function handleMessage(conn, { messages, type }) {
         }
       }
 
+      // ── [FITUR: TICTACTOE] ────────────────────────────────────────────
+      conn.tictactoe = conn.tictactoe || {}
+      if (m.isGroup && m.chat in conn.tictactoe) {
+        const game = conn.tictactoe[m.chat]
+        if (game.status === 'PLAYING') {
+          // Cek jika pesan berupa angka 1-9
+          if (/^[1-9]$/.test(m.text)) {
+            let res = game.play(m.sender, m.text)
+            if (res === -2) {
+              m.reply(`⏳ Tunggu giliranmu! Sekarang giliran @${game.turn.split('@')[0]}`, null, { mentions: [game.turn] })
+            } else if (res === -3) {
+              m.reply('❌ Posisi tidak valid atau sudah terisi!')
+            } else if (res === 0) {
+              let str = `🎮 *TIC-TAC-TOE* 🎮\n\nGiliran: @${game.turn.split('@')[0]}\n\n${game.render()}`
+              conn.sendMessage(m.chat, { text: str, mentions: [game.turn] }, { quoted: m })
+            } else if (res === 1) { // Menang
+              let str = `🎉 *TIC-TAC-TOE SELESAI* 🎉\n\nPemenang: @${game.winner.split('@')[0]} 🏆\n\n${game.render()}`
+              conn.sendMessage(m.chat, { text: str, mentions: [game.winner] }, { quoted: m })
+              delete conn.tictactoe[m.chat]
+            } else if (res === 2) { // Seri
+              let str = `🤝 *TIC-TAC-TOE SERI* 🤝\n\nPermainan berakhir seri!\n\n${game.render()}`
+              conn.sendMessage(m.chat, { text: str }, { quoted: m })
+              delete conn.tictactoe[m.chat]
+            }
+          }
+        }
+      }
+
+      // ── [FITUR: FAMILY 100] ───────────────────────────────────────────
+      conn.family100 = conn.family100 || {}
+      if (m.isGroup && m.chat in conn.family100) {
+        const game = conn.family100[m.chat]
+        let answer = m.text.toLowerCase().trim()
+        
+        // Cari apakah jawaban ada di list dan belum terjawab
+        if (game.jawaban.includes(answer) && !game.terjawab.includes(answer)) {
+          game.terjawab.push(answer)
+          
+          let userKey = m.sender.replace(/\./g, '_')
+          let currentExp = dbGet(`users.${userKey}.exp`, 0)
+          dbSet(`users.${userKey}.exp`, currentExp + game.poin)
+          
+          if (game.terjawab.length >= game.jawaban.length) {
+            clearTimeout(game.waktu)
+            await conn.sendMessage(m.chat, {
+              text: `🎉 *PERFECT!* 🎉\n\nSemua jawaban berhasil ditebak!\n@${m.sender.split('@')[0]} mendapat +${game.poin} XP\n\n*Jawaban:* \n- ${game.jawaban.join('\n- ')}`,
+              mentions: [m.sender]
+            }, { quoted: m })
+            delete conn.family100[m.chat]
+          } else {
+            let sisa = game.jawaban.length - game.terjawab.length
+            await conn.sendMessage(m.chat, {
+              text: `✅ *BENAR!* (@${m.sender.split('@')[0]} mendapat +${game.poin} XP)\n\n*Jawaban Tertebak:*\n- ${game.terjawab.join('\n- ')}\n\nMasih ada *${sisa}* jawaban lagi!`,
+              mentions: [m.sender]
+            }, { quoted: m })
+          }
+        }
+      }
+
       // ── Cek prefix ────────────────────────────────────────────────────
       const prefixList = Array.isArray(prefix) ? prefix : [prefix]
       const usedPrefix = prefixList.find(p => m.text.startsWith(p))
